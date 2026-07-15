@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import yaml
+
 from telemetry_to_yaml.generator.schemas import DbtSemanticManifest, Dimension, Measure, SemanticModel
 from telemetry_to_yaml.parser.analyzer import ParsedTelemetry
 from telemetry_to_yaml.providers.base import TableMetadata
@@ -65,49 +67,8 @@ def build_manifest(table_metadata: list[TableMetadata], telemetry: ParsedTelemet
 
 def write_manifest_yaml(manifest: DbtSemanticManifest, output_path: str) -> None:
     payload = manifest.model_dump(exclude_none=True)
-    yaml_text = "\n".join(_to_yaml_lines(payload)) + "\n"
+    yaml_text = yaml.safe_dump(payload, sort_keys=False)
     Path(output_path).write_text(yaml_text, encoding="utf-8")
-
-
-def _to_yaml_lines(value: object, indent: int = 0) -> list[str]:
-    prefix = " " * indent
-
-    if isinstance(value, dict):
-        lines: list[str] = []
-        for key, nested in value.items():
-            if isinstance(nested, (dict, list)):
-                lines.append(f"{prefix}{key}:")
-                lines.extend(_to_yaml_lines(nested, indent + 2))
-            else:
-                lines.append(f"{prefix}{key}: {_format_scalar(nested)}")
-        return lines
-
-    if isinstance(value, list):
-        lines = []
-        for item in value:
-            if isinstance(item, (dict, list)):
-                lines.append(f"{prefix}-")
-                lines.extend(_to_yaml_lines(item, indent + 2))
-            else:
-                lines.append(f"{prefix}- {_format_scalar(item)}")
-        return lines
-
-    return [f"{prefix}{_format_scalar(value)}"]
-
-
-def _format_scalar(value: object) -> str:
-    if isinstance(value, str):
-        if not value or any(ch in value for ch in (":", "#", "'", '"', " ")):
-            escaped = value.replace("'", "''")
-            return f"'{escaped}'"
-        return value
-    if value is True:
-        return "true"
-    if value is False:
-        return "false"
-    if value is None:
-        return "null"
-    return str(value)
 
 
 def _canonical_data_type(data_type: str) -> str:

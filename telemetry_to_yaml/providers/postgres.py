@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import os
 from collections import defaultdict
-from pathlib import Path
 from typing import Any, Callable
 
 from telemetry_to_yaml.providers.base import BaseProvider, ColumnMetadata, QueryLogEntry, TableMetadata
@@ -135,14 +134,8 @@ class PostgresProvider(BaseProvider):
 
 
 def _load_dotenv(dotenv_path: str | None = None) -> None:
-    path = Path(dotenv_path or ".env")
-    if not path.exists():
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
         return
-
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-
-        key, value = line.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+    load_dotenv(dotenv_path=dotenv_path or ".env", override=False)

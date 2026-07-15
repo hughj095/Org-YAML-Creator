@@ -7,12 +7,17 @@ from dataclasses import dataclass
 
 from telemetry_to_yaml.providers.base import QueryLogEntry, TableMetadata
 
+IDENTIFIER_PATTERN = r'(?:\"[^\"]+\"|[A-Za-z_][A-Za-z0-9_]*)'
+QUALIFIED_IDENTIFIER_PATTERN = rf"{IDENTIFIER_PATTERN}(?:\.{IDENTIFIER_PATTERN}){{1,2}}"
 JOIN_CLAUSE_PATTERN = re.compile(
     r"\bjoin\b\s+\S+\s+\bon\b\s+(.+?)(?=\bjoin\b|\bwhere\b|\bgroup\b|\border\b|\blimit\b|$)",
     re.IGNORECASE | re.DOTALL,
 )
-EQUALITY_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_\.]*\s*=\s*[A-Za-z_][A-Za-z0-9_\.]*")
-COLUMN_PATTERN = re.compile(r'(?:"[^"]+"|[A-Za-z_][A-Za-z0-9_]*)(?:\.(?:"[^"]+"|[A-Za-z_][A-Za-z0-9_]*)){1,2}')
+EQUALITY_PATTERN = re.compile(
+    rf"{QUALIFIED_IDENTIFIER_PATTERN}\s*=\s*{QUALIFIED_IDENTIFIER_PATTERN}",
+    re.IGNORECASE,
+)
+COLUMN_PATTERN = re.compile(QUALIFIED_IDENTIFIER_PATTERN)
 COUNT_PATTERN = re.compile(r"\bcount\s*\(", re.IGNORECASE)
 SUM_PATTERN = re.compile(r"\bsum\s*\(", re.IGNORECASE)
 AVG_PATTERN = re.compile(r"\bavg\s*\(", re.IGNORECASE)
@@ -47,7 +52,7 @@ def analyze_telemetry(
 
         for clause in JOIN_CLAUSE_PATTERN.findall(query):
             for join_match in EQUALITY_PATTERN.findall(clause):
-                normalized = " ".join(join_match.split()).lower()
+                normalized = _normalize_join_condition(join_match)
                 join_conditions[normalized] = join_conditions.get(normalized, 0) + weight
 
         for reference in COLUMN_PATTERN.findall(query):
@@ -73,3 +78,7 @@ def _normalize_reference(reference: str) -> str | None:
         return None
     table_name, column_name = parts[-2], parts[-1]
     return f"{table_name.lower()}.{column_name.lower()}"
+
+
+def _normalize_join_condition(condition: str) -> str:
+    return " ".join(condition.replace('"', "").split()).lower()
