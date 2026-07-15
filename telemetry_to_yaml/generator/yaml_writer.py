@@ -8,13 +8,31 @@ from telemetry_to_yaml.generator.schemas import DbtSemanticManifest, Dimension, 
 from telemetry_to_yaml.parser.analyzer import ParsedTelemetry
 from telemetry_to_yaml.providers.base import TableMetadata
 
+TIME_TYPES = {"date", "datetime", "timestamp", "timestamptz", "time"}
+NUMERIC_TYPES = {
+    "smallint",
+    "integer",
+    "bigint",
+    "int",
+    "int2",
+    "int4",
+    "int8",
+    "numeric",
+    "decimal",
+    "real",
+    "float",
+    "float4",
+    "float8",
+    "double precision",
+}
+
 
 def build_manifest(table_metadata: list[TableMetadata], telemetry: ParsedTelemetry) -> DbtSemanticManifest:
     semantic_models: list[SemanticModel] = []
 
     for table in table_metadata:
         dimensions = [
-            Dimension(name=column.name, type="time" if "time" in column.data_type else "categorical")
+            Dimension(name=column.name, type="time" if _is_time_type(column.data_type) else "categorical")
             for column in table.columns
         ]
 
@@ -26,7 +44,7 @@ def build_manifest(table_metadata: list[TableMetadata], telemetry: ParsedTelemet
                 numeric_columns = [
                     column.name
                     for column in table.columns
-                    if any(token in column.data_type for token in ("int", "numeric", "decimal", "float", "double"))
+                    if _is_numeric_type(column.data_type)
                 ]
                 if numeric_columns:
                     measures.append(
@@ -90,3 +108,15 @@ def _format_scalar(value: object) -> str:
     if value is None:
         return "null"
     return str(value)
+
+
+def _canonical_data_type(data_type: str) -> str:
+    return data_type.strip().lower().split("(", 1)[0].strip()
+
+
+def _is_time_type(data_type: str) -> bool:
+    return _canonical_data_type(data_type) in TIME_TYPES
+
+
+def _is_numeric_type(data_type: str) -> bool:
+    return _canonical_data_type(data_type) in NUMERIC_TYPES

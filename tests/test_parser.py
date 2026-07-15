@@ -25,8 +25,8 @@ class TestAnalyzer(unittest.TestCase):
         logs = [
             QueryLogEntry(
                 query_text=(
-                    "SELECT COUNT(*) FROM orders JOIN customers "
-                    "ON orders.customer_id = customers.id"
+                    "SELECT COUNT(*) FROM public.orders JOIN public.customers "
+                    "ON orders.customer_id = customers.id AND orders.id = customers.id"
                 ),
                 execution_count=3,
             )
@@ -34,5 +34,6 @@ class TestAnalyzer(unittest.TestCase):
 
         parsed = analyze_telemetry(tables, logs)
         self.assertEqual(parsed.join_conditions["orders.customer_id = customers.id"], 3)
+        self.assertEqual(parsed.join_conditions["orders.id = customers.id"], 3)
         self.assertEqual(parsed.column_access_frequency["orders.customer_id"], 3)
         self.assertEqual(parsed.potential_metrics["count"], 3)

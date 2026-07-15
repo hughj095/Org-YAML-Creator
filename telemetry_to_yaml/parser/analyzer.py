@@ -7,8 +7,12 @@ from dataclasses import dataclass
 
 from telemetry_to_yaml.providers.base import QueryLogEntry, TableMetadata
 
-JOIN_PATTERN = re.compile(r"\bjoin\b\s+\S+\s+\bon\b\s+([\w\.]+\s*=\s*[\w\.]+)", re.IGNORECASE)
-COLUMN_PATTERN = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)")
+JOIN_CLAUSE_PATTERN = re.compile(
+    r"\bjoin\b\s+\S+\s+\bon\b\s+(.+?)(?=\bjoin\b|\bwhere\b|\bgroup\b|\border\b|\blimit\b|$)",
+    re.IGNORECASE | re.DOTALL,
+)
+EQUALITY_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_\.]*\s*=\s*[A-Za-z_][A-Za-z0-9_\.]*")
+COLUMN_PATTERN = re.compile(r'(?:"[^"]+"|[A-Za-z_][A-Za-z0-9_]*)(?:\.(?:"[^"]+"|[A-Za-z_][A-Za-z0-9_]*)){1,2}')
 COUNT_PATTERN = re.compile(r"\bcount\s*\(", re.IGNORECASE)
 SUM_PATTERN = re.compile(r"\bsum\s*\(", re.IGNORECASE)
 AVG_PATTERN = re.compile(r"\bavg\s*\(", re.IGNORECASE)
@@ -28,7 +32,7 @@ def analyze_telemetry(
     query_logs: list[QueryLogEntry],
 ) -> ParsedTelemetry:
     known_columns = {
-        f"{table.name}.{column.name}"
+        f"{table.name}.{column.name}".lower()
         for table in table_metadata
         for column in table.columns
     }
@@ -41,13 +45,14 @@ def analyze_telemetry(
         query = log.query_text
         weight = max(log.execution_count, 1)
 
-        for join_match in JOIN_PATTERN.findall(query):
-            normalized = " ".join(join_match.split())
-            join_conditions[normalized] = join_conditions.get(normalized, 0) + weight
+        for clause in JOIN_CLAUSE_PATTERN.findall(query):
+            for join_match in EQUALITY_PATTERN.findall(clause):
+                normalized = " ".join(join_match.split()).lower()
+                join_conditions[normalized] = join_conditions.get(normalized, 0) + weight
 
-        for table_name, column_name in COLUMN_PATTERN.findall(query):
-            key = f"{table_name}.{column_name}"
-            if key in known_columns:
+        for reference in COLUMN_PATTERN.findall(query):
+            key = _normalize_reference(reference)
+            if key and key in known_columns:
                 column_access_frequency[key] = column_access_frequency.get(key, 0) + weight
 
         potential_metrics["count"] += len(COUNT_PATTERN.findall(query)) * weight
@@ -59,3 +64,12 @@ def analyze_telemetry(
         column_access_frequency=column_access_frequency,
         potential_metrics={name: value for name, value in potential_metrics.items() if value > 0},
     )
+
+
+def _normalize_reference(reference: str) -> str | None:
+    clean = reference.replace('"', "")
+    parts = clean.split(".")
+    if len(parts) < 2:
+        return None
+    table_name, column_name = parts[-2], parts[-1]
+    return f"{table_name.lower()}.{column_name.lower()}"

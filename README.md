@@ -22,6 +22,8 @@ This repository now includes a modular Python scaffold under `telemetry_to_yaml/
 pip install -r requirements.txt
 ```
 
+If `psycopg[binary]` is not supported in your environment, install `psycopg` instead.
+
 ## Run
 
 ```bash

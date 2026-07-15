@@ -98,6 +98,9 @@ class PostgresProvider(BaseProvider):
         ]
 
     def extract_query_logs(self, limit: int = 1_000) -> list[QueryLogEntry]:
+        if limit <= 0:
+            raise ValueError("limit must be a positive integer")
+
         sql = """
         SELECT query, calls, total_exec_time
         FROM pg_stat_statements
