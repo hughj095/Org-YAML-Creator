@@ -43,14 +43,10 @@ def build_manifest(table_metadata: list[TableMetadata], telemetry: ParsedTelemet
             if metric_name == "count":
                 measures.append(Measure(name=f"{table.name}_count", agg="count", expr="*"))
             else:
-                numeric_columns = [
-                    column.name
-                    for column in table.columns
-                    if _is_numeric_type(column.data_type)
-                ]
-                if numeric_columns:
+                numeric_column = _select_numeric_measure_column(table, telemetry)
+                if numeric_column is not None:
                     measures.append(
-                        Measure(name=f"{table.name}_{metric_name}", agg=metric_name, expr=numeric_columns[0])
+                        Measure(name=f"{table.name}_{metric_name}", agg=metric_name, expr=numeric_column)
                     )
 
         semantic_models.append(
@@ -81,3 +77,14 @@ def _is_time_type(data_type: str) -> bool:
 
 def _is_numeric_type(data_type: str) -> bool:
     return _canonical_data_type(data_type) in NUMERIC_TYPES
+
+
+def _select_numeric_measure_column(table: TableMetadata, telemetry: ParsedTelemetry) -> str | None:
+    numeric_columns = [column.name for column in table.columns if _is_numeric_type(column.data_type)]
+    if not numeric_columns:
+        return None
+
+    def score(column_name: str) -> int:
+        return telemetry.column_access_frequency.get(f"{table.name}.{column_name}".lower(), 0)
+
+    return max(numeric_columns, key=score)

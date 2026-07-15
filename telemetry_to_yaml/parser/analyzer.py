@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from telemetry_to_yaml.providers.base import QueryLogEntry, TableMetadata
 
-IDENTIFIER_PATTERN = r'(?:"[^"]+"|[A-Za-z_][A-Za-z0-9_]*)'
+IDENTIFIER_PATTERN = r'(?:"(?:[^"]|"")+"|[A-Za-z_][A-Za-z0-9_]*)'
 QUALIFIED_IDENTIFIER_PATTERN = rf"{IDENTIFIER_PATTERN}(?:\.{IDENTIFIER_PATTERN}){{1,2}}"
 JOIN_CLAUSE_PATTERN = re.compile(
     r"\bjoin\b\s+\S+\s+\bon\b\s+(.+?)(?=\bjoin\b|\bwhere\b|\bgroup\b|\border\b|\blimit\b|$)",

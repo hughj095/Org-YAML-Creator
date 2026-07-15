@@ -24,10 +24,6 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     logging.basicConfig(level=getattr(logging, args.log_level.upper(), logging.INFO))
-
-    if args.provider != "postgres":
-        raise ValueError(f"Unsupported provider: {args.provider}")
-
     provider = PostgresProvider.from_env(dotenv_path=args.dotenv)
 
     try:

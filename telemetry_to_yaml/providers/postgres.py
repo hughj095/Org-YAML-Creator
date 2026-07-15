@@ -38,9 +38,14 @@ class PostgresProvider(BaseProvider):
     @classmethod
     def from_env(cls, dotenv_path: str | None = None) -> "PostgresProvider":
         _load_dotenv(dotenv_path)
+        port_value = os.getenv("POSTGRES_PORT", "5432")
+        try:
+            port = int(port_value)
+        except ValueError as exc:
+            raise ValueError("POSTGRES_PORT must be a valid integer") from exc
         return cls(
             os.getenv("POSTGRES_HOST", "localhost"),
-            int(os.getenv("POSTGRES_PORT", "5432")),
+            port,
             os.getenv("POSTGRES_DB", "postgres"),
             os.getenv("POSTGRES_USER", "postgres"),
             os.getenv("POSTGRES_PASSWORD", ""),

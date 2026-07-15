@@ -15,9 +15,14 @@ class TestYamlWriter(unittest.TestCase):
                 ColumnMetadata(name="event_time", data_type="timestamp"),
                 ColumnMetadata(name="printed_output", data_type="text"),
                 ColumnMetadata(name="amount", data_type="numeric(12,2)"),
+                ColumnMetadata(name="tax_amount", data_type="numeric(12,2)"),
             ],
         )
-        telemetry = ParsedTelemetry(join_conditions={}, column_access_frequency={}, potential_metrics={"sum": 1})
+        telemetry = ParsedTelemetry(
+            join_conditions={},
+            column_access_frequency={"events.tax_amount": 3, "events.amount": 1},
+            potential_metrics={"sum": 1},
+        )
 
         manifest = build_manifest([table], telemetry)
         model = manifest.semantic_models[0]
@@ -28,4 +33,4 @@ class TestYamlWriter(unittest.TestCase):
         self.assertEqual(dimensions["printed_output"], "categorical")
 
         self.assertEqual(len(model.measures), 1)
-        self.assertEqual(model.measures[0].expr, "amount")
+        self.assertEqual(model.measures[0].expr, "tax_amount")
