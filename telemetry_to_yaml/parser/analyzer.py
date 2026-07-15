@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from telemetry_to_yaml.providers.base import QueryLogEntry, TableMetadata
 
 JOIN_PATTERN = re.compile(r"\bjoin\b\s+\S+\s+\bon\b\s+([\w\.]+\s*=\s*[\w\.]+)", re.IGNORECASE)
-COLUMN_PATTERN = re.compile(r"([A-Za-z_][\w]*)\.([A-Za-z_][\w]*)")
+COLUMN_PATTERN = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)")
 COUNT_PATTERN = re.compile(r"\bcount\s*\(", re.IGNORECASE)
 SUM_PATTERN = re.compile(r"\bsum\s*\(", re.IGNORECASE)
 AVG_PATTERN = re.compile(r"\bavg\s*\(", re.IGNORECASE)

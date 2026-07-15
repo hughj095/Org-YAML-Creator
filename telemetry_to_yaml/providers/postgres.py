@@ -39,13 +39,12 @@ class PostgresProvider(BaseProvider):
     @classmethod
     def from_env(cls, dotenv_path: str | None = None) -> "PostgresProvider":
         _load_dotenv(dotenv_path)
-        pwd_env_key = "POSTGRES_" + "PASSWORD"
         return cls(
             os.getenv("POSTGRES_HOST", "localhost"),
             int(os.getenv("POSTGRES_PORT", "5432")),
             os.getenv("POSTGRES_DB", "postgres"),
             os.getenv("POSTGRES_USER", "postgres"),
-            os.getenv(pwd_env_key, ""),
+            os.getenv("POSTGRES_PASSWORD", ""),
         )
 
     def _get_connection(self) -> Any:
@@ -54,8 +53,8 @@ class PostgresProvider(BaseProvider):
             "port": self.port,
             "dbname": self.database,
             "user": self.user,
+            "password": self.password,
         }
-        connection_kwargs["pass" + "word"] = self.password
 
         if self._connect_fn is not None:
             return self._connect_fn(**connection_kwargs)

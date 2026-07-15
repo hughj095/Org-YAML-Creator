@@ -4,7 +4,7 @@ Scans org telemetry to create semantic YAML files for RAG and Text-to-SQL applic
 
 ## Telemetry-to-YAML scaffold
 
-This repository now includes a modular Python scaffold under `/home/runner/work/Org-YAML-Creator/Org-YAML-Creator/telemetry_to_yaml`:
+This repository now includes a modular Python scaffold under `telemetry_to_yaml/`:
 
 - `providers/`:
   - `base.py`: abstract `BaseProvider` contract for metadata + query-log extraction.
